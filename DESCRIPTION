@@ -1,0 +1,23 @@
+Package: groundcontrol
+Title: Create a dataset of flights
+Version: 1.0.0
+Authors@R: c(
+    person("Jeffrey", "Arnold", , "jeffrey.arnold@gmail.com", c("aut", "cre")),
+    person("Hadley", "Wickham", , "hadley@rstudio.com", c("cph")),
+    person("RStudio", role = "cph")
+    )
+Description: Create an R package of airline on-time data for all flights
+    departing or arriving at airports in year, similar to nycflights13.
+License: CC0
+LazyData: true
+Depends:
+    R (>= 2.10)
+Imports:
+    devtools,
+    dplyr,
+    httr,
+    lubridate,
+    readr
+URL: http://github.com/jrnold/groundcontrol
+BugReports: https://github.com/jrnold/groundcontrol/issues
+RoxygenNote: 5.0.1
