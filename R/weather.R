@@ -15,13 +15,12 @@ get_asos <- function(station, year, cache) {
   }
 }
 
-download_weather <- function(year, stations, cache = NULL) {
-  if (is.null(cache)) {
-    cache <- tempfile()
-    dir.create(cache)
-  }
-  lapply(stations, get_asos, year = year, cache = cache)
-  paths <- dir(cache, full.names = TRUE, pattern = ".*\\.csv")
+#' @export
+download_weather <- function(year, stations, cache = tempfile()) {
+  dst <- file.path(cache, "weather")
+  dir.create(dst, recursive = TRUE, showWarnings = FALSE)
+  lapply(stations, get_asos, year = year, cache = dst)
+  paths <- dir(dst, full.names = TRUE, pattern = ".*\\.csv")
   col_types <- cols(
     .default = col_double(),
     station = col_character(),
@@ -35,13 +34,11 @@ download_weather <- function(year, stations, cache = NULL) {
   )
   all <- lapply(paths, read_csv, comment = "#", na = "M",
                 col_names = TRUE, col_types = col_types)
-
   raw <- bind_rows(all)
   names(raw) <- c("station", "valid", "tmpf", "dwpf", "relh", "drct", "sknt",
                    "p01i", "alti", "mslp", "vsby", "gust",
                    "skyc1", "skyc2", "skyc3", "skyc4",
                    "skyl1", "skyl2", "skyl3", "skyl4", "presentwx", "metar")
-
   raw %>%
     rename_(time = ~valid) %>%
     select_(

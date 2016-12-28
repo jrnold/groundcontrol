@@ -1,29 +1,30 @@
-library(dplyr)
-library(readr)
-
-download_planes <- function(flights, cache = NULL) {
-  if (is.null(cache)) {
-    cache <- tempfile()
-    dir.create()
-  }
+#' @export
+download_planes <- function(flights, cache = tempfile()) {
+  dst_dir <- file.path(cache, "planes")
+  dir.create(dst_dir, showWarnings = FALSE, recursive = TRUE)
   # Update URL from
   # http://www.faa.gov/licenses_certificates/aircraft_certification/aircraft_registry/releasable_aircraft_download/
-  src <- "http://registry.faa.gov/database/AR062014.zip"
-
-  if (!file.exists(lcl)) {
+  # src <- "http://registry.faa.gov/database/AR062014.zip"
+  src <- "http://registry.faa.gov/database/ReleasableAircraft.zip"
+  if (!file.exists(file.path(dst_dir, "MASTER.txt"))) {
     tmp <- tempfile(fileext = ".zip")
-    download.file(src, tmp)
-    unzip(tmp, exdir = cache, junkpaths = TRUE)
+    r <- GET(src, write_disk(tmp))
+    stop_for_status(r)
+    unzip(tmp, exdir = dst_dir, junkpaths = TRUE)
   }
-
-  master <- read_csv(file.path(cache, "MASTER.txt"), trim_ws = TRUE)
+  col_types <- cols(
+    Code = col_character(),
+    Description = col_character()
+  )
+  master <- read_csv(file.path(dst_dir, "MASTER.txt"),
+                     trim_ws = TRUE, col_types = col_types)
   names(master) <- tolower(names(master))
 
   keep <- master %>%
     tbl_df() %>%
     select(nnum = ~n.number, code = ~mfr.mdl.code, year = ~year.mfr)
 
-  ref <- read_csv(file.path(cache, "ACFTREF.txt"), trim_ws = TRUE)
+  ref <- read_csv(file.path(dst_dir, "ACFTREF.txt"), trim_ws = TRUE)
   names(ref) <- tolower(names(ref))
 
   ref <- ref %>%

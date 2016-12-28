@@ -1,4 +1,7 @@
-download_airports <- function(dst = tempfile()) {
+#' @export
+download_airports <- function(cache = tempfile()) {
+  dir.create(cache, showWarnings = FALSE, recursive = TRUE)
+  dst <- file.path(cache, "airports.dat")
   if (!file.exists(dst)) {
     download.file(
       "https://raw.githubusercontent.com/jpatokal/openflights/master/data/airports.dat",

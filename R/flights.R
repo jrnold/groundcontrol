@@ -25,12 +25,18 @@ flights_download_month <- function(month, year, cache) {
 
 
 flights_download_year <- function(year, cache) {
-  months <- 1:12
-  lapply(months, flights_download_month, year, cache)
+  lapply(1:12, function(month, year, cache) {
+    flights_download_month(month, year, cache)
+  }, year = year, cache = cache)
 }
 
 
-get_flights_for_airports <- function(path, airports) {
+get_flights_for_airports <- function(path, airports,
+                                     is_origin = TRUE,
+                                     is_dest = FALSE) {
+  assert_that(is.flag(is_origin))
+  assert_that(is.flag(is_dest))
+  assert_that(is_origin || is_dest)
   col_types <- cols(
     DepTime = col_integer(),
     ArrTime = col_integer(),
@@ -39,7 +45,8 @@ get_flights_for_airports <- function(path, airports) {
     Carrier = col_character(),
     UniqueCarrier = col_character()
   )
-  read_csv(path, col_types = col_types) %>%
+  flights <-
+    read_csv(path, col_types = col_types) %>%
     select_(
       year = ~Year, month = ~Month, day = ~DayofMonth,
       dep_time = ~DepTime, sched_dep_time = ~CRSDepTime, dep_delay = ~DepDelay,
@@ -47,8 +54,10 @@ get_flights_for_airports <- function(path, airports) {
       carrier = ~Carrier, flight = ~FlightNum, tailnum = ~TailNum,
       origin = ~Origin, dest = ~Dest,
       air_time = ~AirTime, distance = ~Distance
-    ) %>%
-    filter_(~origin %in% airports) %>%
+    )
+    filter_(flights,
+            ~ !is_origin | (origin %in% airports),
+            ~ !is_dest | (dest %in% airports)) %>%
     mutate_(
       hour = ~ sched_dep_time %/% 100,
       minute = ~ sched_dep_time %% 100,
@@ -57,14 +66,15 @@ get_flights_for_airports <- function(path, airports) {
     arrange_(~year, ~month, ~day, ~dep_time)
 }
 
-download_flights <- function(year, airports, cache = NULL) {
-  if (is.null(cache)) {
-    cache <- tempfile()
-    dir.create(cache)
-  }
-  flights_download_year(year, cache)
-  all <- lapply(dir(cache, full.names = TRUE),
-                get_flights_for_airports, airports)
+#' @export
+download_flights <- function(year, airports, cache = tempfile(),
+                             is_origin = TRUE, is_dest = FALSE) {
+  dst <- file.path(cache, "flights")
+  dir.create(dst, showWarnings = FALSE, recursive = FALSE)
+  flights_download_year(year, dst)
+  all <- lapply(dir(dst, full.names = TRUE),
+                get_flights_for_airports, airports,
+                is_origin = is_origin, is_dest = is_dest)
   flights <- bind_rows(all)
   flights$tailnum[flights$tailnum == ""] <- NA
   flights
