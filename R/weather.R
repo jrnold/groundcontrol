@@ -1,5 +1,5 @@
 # From https://mesonet.agron.iastate.edu/request/download.phtml?network=NY_ASOS
-get_asos <- function(station, year, cache) {
+get_asos <- function(station, year, csv_output = NULL, ) {
   url <- "http://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?"
   dst <- file.path(cache, paste0(station, ".csv"))
   if (!file.exists(dst)) {

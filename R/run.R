@@ -23,7 +23,10 @@ create <- function(path, year, airports,
 
 download_all <- function(pkg, airports, year) {
   data_raw_dir <- file.path(pkg, "data-raw")
+  csv_dir <- file.path(pkg, "data")
   airports <- download_airports()
+
+
   write_csv(airports, file.path(data_raw_dir, "airports.csv"))
   weather <- download_weather(year, airports)
   write_csv(weather, file.path(data_raw_dir, "weather.csv"))
