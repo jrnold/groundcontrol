@@ -13,11 +13,14 @@ LazyData: true
 Depends:
     R (>= 2.10)
 Imports:
+    assertthat,
     devtools,
     dplyr,
     httr,
     lubridate,
-    readr
+    purrr,
+    readr,
+    stringr
 URL: http://github.com/jrnold/groundcontrol
 BugReports: https://github.com/jrnold/groundcontrol/issues
 RoxygenNote: 5.0.1

@@ -1,5 +1,5 @@
 # From https://mesonet.agron.iastate.edu/request/download.phtml?network=NY_ASOS
-get_asos <- function(station, year, csv_output = NULL, ) {
+get_asos <- function(station, year, csv_output = NULL, cache = tempfile()) {
   url <- "http://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?"
   dst <- file.path(cache, paste0(station, ".csv"))
   if (!file.exists(dst)) {
@@ -12,16 +12,16 @@ get_asos <- function(station, year, csv_output = NULL, ) {
     dir.create(cache, showWarnings = FALSE, recursive = TRUE)
     r <- GET(url, query = query, write_disk(dst))
     stop_for_status(r)
+    message("Saved file ", dst)
   }
 }
 
-download_weather <- function(year, stations, cache = NULL) {
-  if (is.null(cache)) {
-    cache <- tempfile()
-    dir.create(cache)
-  }
-  lapply(stations, get_asos, year = year, cache = cache)
-  paths <- dir(cache, full.names = TRUE, pattern = ".*\\.csv")
+download_weather <- function(data_dir, raw_dir, year, stations) {
+  cache <- raw_dir
+  dst <- file.path(cache, "weather")
+  dir.create(dst, recursive = TRUE, showWarnings = FALSE)
+  lapply(stations, get_asos, year = year, cache = dst)
+  paths <- dir(dst, full.names = TRUE, pattern = ".*\\.csv")
   col_types <- cols(
     .default = col_double(),
     station = col_character(),
@@ -35,14 +35,13 @@ download_weather <- function(year, stations, cache = NULL) {
   )
   all <- lapply(paths, read_csv, comment = "#", na = "M",
                 col_names = TRUE, col_types = col_types)
-
   raw <- bind_rows(all)
   names(raw) <- c("station", "valid", "tmpf", "dwpf", "relh", "drct", "sknt",
                    "p01i", "alti", "mslp", "vsby", "gust",
                    "skyc1", "skyc2", "skyc3", "skyc4",
                    "skyl1", "skyl2", "skyl3", "skyl4", "presentwx", "metar")
-
-  raw %>%
+  weather <-
+    raw %>%
     rename_(time = ~valid) %>%
     select_(
       ~station, ~time, temp = ~tmpf, dewp = ~dwpf, humid = ~relh,
@@ -59,10 +58,15 @@ download_weather <- function(year, stations, cache = NULL) {
       hour = ~lubridate::hour(time)) %>%
     group_by_(~station, ~month, ~day, ~hour) %>%
     filter_(~ row_number() == 1) %>%
-    select_(origin = ~station, ~year:hour, ~temp:visib) %>%
+    select_(~station, ~year:hour, ~temp:visib) %>%
     ungroup() %>%
     filter_(~!is.na(month)) %>%
     mutate_(
       time_hour = ~ISOdatetime(year, month, day, hour, 0, 0)
     )
+
+  save_csv(weather, file.path(raw_dir, "weather.csv"))
+  save_rda(weather, file = file.path(data_dir, "weather.rda"),
+           compress = "bzip2")
+
 }

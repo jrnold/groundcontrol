@@ -1,41 +1,52 @@
-#' @importFrom readr write_csv read_csv
-#' @importFrom lubridate ymd mday month
+#' @import readr
 #' @import dplyr
+#' @importFrom lubridate ymd mday month
+#' @importFrom purrr "%||%" map_chr
 #' @importFrom stats time
 #' @importFrom utils download.file unzip
 #' @importFrom httr GET write_disk stop_for_status
+#' @importFrom assertthat is.flag assert_that
+#' @importFrom stringr str_replace_all str_to_lower
 NULL
 
-#' Create a flights data-only R package
-#'
-#' @param path Path to the location of the new package
-#' @param year Year for flights
-#' @param airports Airports to use for flights
-#' @param description Options to add to the DESCRIPTION
-#' @export
-create <- function(path, year, airports,
-                   description = getOption("devtools.desc")) {
-
-  devtools::create(path, description = description)
-  devtools::use_data_raw(path)
-  download_all(path, airports, year)
+save_csv <- function(x, path, ...) {
+  write_csv(x, path, ...)
+  message("Saved file ", path)
 }
 
-download_all <- function(pkg, airports, year) {
-  data_raw_dir <- file.path(pkg, "data-raw")
-  csv_dir <- file.path(pkg, "data")
-  airports <- download_airports()
+save_rda <- function(..., file = stop("File must be specified"),
+                     envir = parent.frame()) {
+  save(..., file = file, envir = envir)
+  message("Saved file ", file)
+}
 
-
-  write_csv(airports, file.path(data_raw_dir, "airports.csv"))
-  weather <- download_weather(year, airports)
-  write_csv(weather, file.path(data_raw_dir, "weather.csv"))
-  flights <- download_flights(year, airports)
-  write_csv(weather, file.path(data_raw_dir, "flights.csv"))
-  airlines <- download_airlines(flights)
-  write_csv(airlines, file.path(data_raw_dir, "airlines.csv"))
-  planes <- download_planes(flights)
-  write_csv(planes, file.path(data_raw_dir, "planes.csv"))
-  devtools::use_data(airports, flights, weather, airlines, planes,
-                     pkg = pkg, overwrite = TRUE)
+#' @export
+download_flightdata <- function(airport_codes,
+                                 year,
+                                 data_dir = "./data",
+                                 raw_dir = "./data-raw",
+                                 origin = TRUE,
+                                 dest = FALSE,
+                                 all_weather = FALSE) {
+  flights <- NULL
+  dir.create(raw_dir)
+  dir.create(data_dir)
+  download_flights(data_dir,
+                    raw_dir,
+                    year,
+                    airport_codes,
+                    is_origin = origin,
+                    is_dest = dest)
+  load(file.path(data_dir, "flights.rda"))
+  download_airports(data_dir, raw_dir)
+  if (all_weather) {
+    all_airports <- unique(c(unique(flights[["origin"]]),
+                             unique(flights[["dest"]])))
+  } else {
+    all_airports <- airport_codes
+  }
+  download_weather(data_dir, raw_dir, year, all_airports)
+  download_airlines(data_dir, raw_dir, flights)
+  download_planes(data_dir, raw_dir, flights)
+  NULL
 }
