@@ -214,7 +214,6 @@ create_flights <- function(path, airport_codes, year,
                            all_weather = FALSE,
                            author = getOption("devtools.desc.author")) {
   assert_that(inherits(author, "person"))
-  assert_that(is.flag(force))
   description <- list(
     Description = description_text(airport_codes, year, origin, dest),
     Title = title_text(airport_codes, year, origin, dest),
