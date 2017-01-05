@@ -2,7 +2,8 @@
 #'
 #' Look up airline names from their carrier codes.
 #'
-#' @source http://www.transtats.bts.gov/DL_SelectFields.asp?Table_ID=236
+#' @source http://www.transtats.bts.gov/DL_SelectFields.asp?Table_ID=236,
+#'    downloaded {{{date}}}.
 #' @format Data frame with columns
 #' \describe{
 #' \item{carrier}{Two letter abbreviation}

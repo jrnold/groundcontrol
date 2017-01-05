@@ -24,6 +24,8 @@
 #' @importFrom stringr str_c
 NULL
 
+.PACKAGE <- "groundcontrol"
+
 airport_str <- function(airports, conjunction = "or") {
   if (length(airports) == 1) {
     airports
@@ -36,7 +38,7 @@ airport_str <- function(airports, conjunction = "or") {
 
 description_title <- function(airports, year, origin, dest) {
   str_c("Flights that ",
-        str_c(if (origin) "Departed" else "",
+        str_c(if (origin) "Departed from" else "",
                   if (dest) "Arrived at" else "",
                   sep = " or "),
         " ", airport_str(airports, "or"),
@@ -45,17 +47,17 @@ description_title <- function(airports, year, origin, dest) {
 
 description_text <- function(airports, year, origin, dest) {
   str_c("Airline on-time data for all flights ",
-        str_c(if (origin) "departing" else "",
-              if (dest) "arriving" else "",
+        str_c(if (origin) "departing from" else "",
+              if (dest) "arriving at" else "",
               sep = " or "),
         " ", airport_str(airports, "or"),
         " in ", year, ". ",
         "Also includes useful 'metadata' on airlines, airports, weather, and planes.",
-        " This is a data package created by groundcontrol")
+        " This is a data package created by groundcontrol.")
 }
 
 # copied from devtools:::is_dir
-is_dir <- function (x) file.info(x)$isdir
+is_dir <- function(x) file.info(x)$isdir
 
 # copied from devtools:::use_directory
 use_directory <- function(path, ignore = FALSE, pkg = ".") {
@@ -78,24 +80,80 @@ use_directory <- function(path, ignore = FALSE, pkg = ".") {
   invisible(TRUE)
 }
 
-#' From devtools:::render_template
-#' https://github.com/hadley/devtools/blob/ba7a5a4abd8258c52cb156e7b26bb4bf47a79f0b/R/utils.r
-render_template <- function(name, data = list()) {
-  path <- system.file("templates", name, package = "devtools")
-  template <- readLines(path)
-  whisker::whisker.render(template, data)
+template_path <- function(name) {
+  system.file("templates", name, package = .PACKAGE)
+}
+
+# From devtools:::render_template
+# https://github.com/hadley/devtools/blob/ba7a5a4abd8258c52cb156e7b26bb4bf47a79f0b/R/utils.r
+render_template <- function(name, file = NULL, data = list()) {
+  template <- readLines(template_path(name))
+  rendered <- whisker::whisker.render(template, data)
+  if (!is.null(file)) {
+    cat(rendered, file = file)
+  }
+  rendered
+}
+
+str_comma <- function(x, last = ", and ", sep = ", ") {
+  n <- length(x)
+  if (n < 2) {
+    x
+  } else {
+    str_c(str_c(x[-1L], collapse = sep), sep = last)
+  }
+}
+
+
+render_weather <- function(pkg, airports, year) {
+  render_template("weather.R", file = file.path(pkg, "R", "weather.R"),
+                  data = list(airports = str_comma(airports), year = year))
+}
+
+render_planes <- function(pkg) {
+  file.copy(template_path("planes.R"), file.path(pkg, "R", "planes.R"))
+}
+
+render_airport <- function(pkg) {
+  render_template("airport.R", file = file.path(pkg, "R", "airport.R"),
+                  data = list(date = Sys.Date()))
+}
+
+render_airlines <- function(pkg) {
+  render_template("airlines.R", file = file.path(pkg, "R", "airlines.R"),
+                  data = list(date = Sys.Date()))
+}
+
+render_flights <- function(pkg, airports, year, origin, dest) {
+  render_template("flights.R", file = file.path(pkg, "R", "flights.R"),
+                  data = list(
+                    airports = str_comma(airports, last = ", or "),
+                    year = year,
+                    depart = str_c(if (origin) "departing" else "",
+                          if (dest) "arriving" else "",
+                          sep = " or ")
+                  )
+  )
 }
 
 #' @export
-build_pkg <- function(path, airport_codes, year, origin = TRUE, dest = FALSE,
-                      all_weather = FALSE, description = getOption("devtools.desc")) {
-  description_ <- append(list(
-    description = description_text(airport_codes, year, origin, dest),
-    title = description_text(airport_codes, year, origin, dest),
-    license = "CC0"
-  ), description)
-  create(path, description = description)
+build_pkg <- function(path, airport_codes, year,
+                      origin = TRUE, dest = FALSE,
+                      all_weather = FALSE, author = getOption("devtools.desc.author"), force = FALSE) {
+  description <- list(
+    Description = description_text(airport_codes, year, origin, dest),
+    Title = title_text(airport_codes, year, origin, dest),
+    License = "CC0",
+    "Authors@R" = author
+  )
+  if (!dir.exists(path)) {
+    dir.create(path)
+  } else if (!force) {
+    stop("Directory ", path, " already exists.")
+  }
   pkg <- as.package(path)
+  use_build_ignore(pkg = pkg)
+  use_rstudio(pkg = pkg)
   use_directory("data", ignore = FALSE, pkg = pkg)
   use_data_raw(path)
   download_flightdata(airport_codes, year,
@@ -103,6 +161,11 @@ build_pkg <- function(path, airport_codes, year, origin = TRUE, dest = FALSE,
                       raw_dir = file.path(path, "data-raw"),
                       origin = origin, dest = dest, all_weather = all_weather)
   use_directory("R", pkg = pkg)
+  render_flights(path, airport_codes, year, origin, dest)
+  render_weather(path, airport_codes)
+  render_planes(path)
+  render_airport(path)
+  render_airlines(path)
   document(pkg)
 }
 

@@ -1,6 +1,6 @@
 #' Hourly weather data
 #'
-#' Hourly meterological data for {{{airports}}}.
+#' Hourly meterological data for {{{airports}}} in {{{year}}}.
 #'
 #' @source ASOS download from Iowa Environmental Mesonet,
 #'   https://mesonet.agron.iastate.edu/request/download.phtml.
