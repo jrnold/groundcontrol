@@ -219,6 +219,7 @@ create_flights <- function(path, airport_codes, year,
     Title = title_text(airport_codes, year, origin, dest),
     License = "CC0",
     Imports = "tibble",
+    Suggests = "dplyr",
     "Authors@R" = author
   )
   create(path, description = description)
