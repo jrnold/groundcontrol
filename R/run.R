@@ -36,7 +36,7 @@ airport_str <- function(airports, conjunction = "or") {
   }
 }
 
-description_title <- function(airports, year, origin, dest) {
+title_text <- function(airports, year, origin, dest) {
   str_c("Flights that ",
         str_c(if (origin) "Departed from" else "",
                   if (dest) "Arrived at" else "",
@@ -136,38 +136,6 @@ render_flights <- function(pkg, airports, year, origin, dest) {
   )
 }
 
-#' @export
-build_pkg <- function(path, airport_codes, year,
-                      origin = TRUE, dest = FALSE,
-                      all_weather = FALSE, author = getOption("devtools.desc.author"), force = FALSE) {
-  description <- list(
-    Description = description_text(airport_codes, year, origin, dest),
-    Title = title_text(airport_codes, year, origin, dest),
-    License = "CC0",
-    "Authors@R" = author
-  )
-  if (!dir.exists(path)) {
-    dir.create(path)
-  } else if (!force) {
-    stop("Directory ", path, " already exists.")
-  }
-  pkg <- as.package(path)
-  use_build_ignore(pkg = pkg)
-  use_rstudio(pkg = pkg)
-  use_directory("data", ignore = FALSE, pkg = pkg)
-  use_data_raw(path)
-  download_flightdata(airport_codes, year,
-                      data_dir = file.path(path, "data"),
-                      raw_dir = file.path(path, "data-raw"),
-                      origin = origin, dest = dest, all_weather = all_weather)
-  use_directory("R", pkg = pkg)
-  render_flights(path, airport_codes, year, origin, dest)
-  render_weather(path, airport_codes)
-  render_planes(path)
-  render_airport(path)
-  render_airlines(path)
-  document(pkg)
-}
 
 save_csv <- function(x, path, ...) {
   write_csv(x, path, ...)
@@ -180,6 +148,9 @@ save_rda <- function(..., file = stop("File must be specified"),
   message("Saved file ", file)
 }
 
+#' @param raw_dir Directory to save \code{.csv} and intermediate files.
+#' @param data_dir Directory to save \code{.rda} file.
+#' @rdname create_flights
 #' @export
 download_flightdata <- function(airport_codes,
                                  year,
@@ -189,6 +160,9 @@ download_flightdata <- function(airport_codes,
                                  dest = FALSE,
                                  all_weather = FALSE) {
   flights <- NULL
+  assert_that(is.flag(origin))
+  assert_that(is.flag(dest))
+  assert_that(origin || dest)
   if (!dir.exists(data_dir)) dir.create(data_dir)
   if (!dir.exists(raw_dir)) dir.create(raw_dir)
   download_flights(data_dir,
@@ -209,4 +183,58 @@ download_flightdata <- function(airport_codes,
   download_airlines(data_dir, raw_dir, flights)
   download_planes(data_dir, raw_dir, flights)
   NULL
+}
+
+#' Create a data-only flights package
+#'
+#' Create a data-only R pacakge of flights data, like \pkg{nycflights13},
+#' but with user-specified airports, years, and direction (departing, arriving).
+#'
+#' The function \code{create_flights} creates an R package with the flight data.
+#' The function \code{download_flightdata} downloads the data and saves \code{.csv} and \code{.rda} files to specified directories, but does not create an R package.
+#'
+#' @param path Location to create new package. The last component of the path will be used as the package name.
+#' @param author A \code{\link[utils]{person}} object to use as the author of the new package.
+#' @param airport_codes A character vector of airport codes
+#' @param year Year of flights to download.
+#' @param origin,dest If \code{origin} (\code{dest}) is \code{TRUE}, keep all flights originating from (arriving at) \code{airports}. At least one of \code{origin} or \code{dest} must be \code{TRUE}.
+#' @param all_weather If \code{TRUE}, get weather for not just the chosen airports, but also all (domestic) airports appearing in the flight data.
+#' @return A \code{"package"} object for the created package.
+#'  This function is called for
+#'  the side-effect of downloading the data and creating a package.
+#' @export
+#' @examples
+#' \dontrun{
+#'   # Package with all flights departing from or arriving
+#'   # at Seattle (SEA) in 2015.
+#'   create_flights("seaflights15", "SEA", 2015, origin = TRUE, dest = TRUE)
+#' }
+create_flights <- function(path, airport_codes, year,
+                           origin = TRUE, dest = FALSE,
+                           all_weather = FALSE,
+                           author = getOption("devtools.desc.author")) {
+  assert_that(inherits(author, "person"))
+  assert_that(is.flag(force))
+  description <- list(
+    Description = description_text(airport_codes, year, origin, dest),
+    Title = title_text(airport_codes, year, origin, dest),
+    License = "CC0",
+    "Authors@R" = author
+  )
+  create(path, description = description)
+  pkg <- as.package(path)
+  use_directory("data", ignore = FALSE, pkg = pkg)
+  use_data_raw(path)
+  download_flightdata(airport_codes, year,
+                      data_dir = file.path(path, "data"),
+                      raw_dir = file.path(path, "data-raw"),
+                      origin = origin, dest = dest, all_weather = all_weather)
+  use_directory("R", pkg = pkg)
+  render_flights(path, airport_codes, year, origin, dest)
+  render_weather(path, airport_codes, year)
+  render_planes(path)
+  render_airport(path)
+  render_airlines(path)
+  document(pkg)
+  pkg
 }
