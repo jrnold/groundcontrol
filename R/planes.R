@@ -12,29 +12,75 @@ download_planes <- function(data_dir, raw_dir, flights) {
     unzip(tmp, exdir = dst_dir, junkpaths = TRUE)
     message("Unzipped contents to ", dst_dir)
   }
-  col_types = cols(
+  col_names <- c(
+      "N-NUMBER",        "SERIAL NUMBER",   "MFR MDL CODE",
+      "ENG MFR MDL",     "YEAR MFR",        "TYPE REGISTRANT",
+      "NAME",            "STREET",          "STREET2",
+      "CITY",            "STATE",           "ZIP CODE",
+      "REGION",          "COUNTY",          "COUNTRY",
+      "LAST ACTION DATE","CERT ISSUE DATE", "CERTIFICATION",
+      "TYPE AIRCRAFT",   "TYPE ENGINE",     "STATUS CODE",
+      "MODE S CODE",     "FRACT OWNER",     "AIR WORTH DATE",
+      "OTHER NAMES(1)",  "OTHER NAMES(2)",  "OTHER NAMES(3)",
+      "OTHER NAMES(4)",  "OTHER NAMES(5)",  "EXPIRATION DATE",
+      "UNIQUE ID",       "KIT MFR",         "KIT MODEL",
+      "MODE S CODE HEX", "X35")
+  col_types <- cols(
     .default = col_character(),
+    `N-NUMBER` = col_character(),
+    `SERIAL NUMBER` = col_character(),
+    `MFR MDL CODE` = col_character(),
+    `ENG MFR MDL` = col_character(),
     `YEAR MFR` = col_integer(),
     `TYPE REGISTRANT` = col_integer(),
+    NAME = col_character(),
+    STREET = col_character(),
+    STREET2 = col_character(),
+    CITY = col_character(),
+    STATE = col_character(),
+    `ZIP CODE` = col_character(),
+    REGION = col_character(),
+    COUNTY = col_character(),
+    COUNTRY = col_character(),
     `LAST ACTION DATE` = col_integer(),
     `CERT ISSUE DATE` = col_integer(),
+    CERTIFICATION = col_character(),
     `TYPE AIRCRAFT` = col_integer(),
     `TYPE ENGINE` = col_integer(),
+    `STATUS CODE` = col_character(),
     `MODE S CODE` = col_integer(),
+    `FRACT OWNER` = col_character(),
     `AIR WORTH DATE` = col_integer(),
-    `EXPIRATION DATE` = col_integer()
+    `OTHER NAMES(1)` = col_character(),
+    `OTHER NAMES(2)` = col_character(),
+    `OTHER NAMES(3)` = col_character(),
+    `OTHER NAMES(4)` = col_character(),
+    `OTHER NAMES(5)` = col_character(),
+    `EXPIRATION DATE` = col_integer(),
+    `UNIQUE ID` = col_character(),
+    `KIT MFR` = col_character(),
+    `KIT MODEL` = col_character(),
+    `MODE S CODE HEX` = col_character(),
+    X35 = col_character()
   )
   master <- read_csv(file.path(dst_dir, "MASTER.txt"),
-                     trim_ws = TRUE, col_types = col_types)
+                     trim_ws = TRUE,
+                     skip = 1,
+                     col_names = col_names,
+                     col_types = col_types)
   names(master) <- str_replace_all(str_to_lower(names(master)), "[- ()]", ".")
 
   keep <- master %>%
     select_(nnum = ~ n.number,
             code = ~ mfr.mdl.code,
             year = ~ year.mfr)
-
+  col_names <-
+    c("CODE", "MFR", "MODEL", "TYPE-ACFT",
+      "TYPE-ENG", "AC-CAT", "BUILD-CERT-IND", "NO-ENG",
+      "NO-SEATS", "AC-WEIGHT", "SPEED", "X12")
   col_types <- cols(
     .default = col_character(),
+    `CODE` = col_character(),
     MFR = col_character(),
     MODEL = col_character(),
     `TYPE-ACFT` = col_integer(),
@@ -47,10 +93,12 @@ download_planes <- function(data_dir, raw_dir, flights) {
     SPEED = col_character(),
     X12 = col_character()
   )
-
-  ref <- read_csv(file.path(dst_dir, "ACFTREF.txt"), trim_ws = TRUE,
-                  col_types = col_types)
-  names(ref)[1] <- "CODE"
+  ref <- read_delim(file.path(dst_dir, "ACFTREF.txt"), ",",
+                    quote = "",
+                    skip = 1,
+                    trim_ws = TRUE,
+                    col_names = col_names,
+                    col_types = col_types)
   names(ref) <- str_replace_all(str_to_lower(names(ref)), "[- ()]", ".")
 
   ref <- ref %>%

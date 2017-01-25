@@ -182,7 +182,7 @@ download_flightdata <- function(airport_codes,
   download_weather(data_dir, raw_dir, year, all_airports)
   download_airlines(data_dir, raw_dir, flights)
   download_planes(data_dir, raw_dir, flights)
-  NULL
+  invisible(TRUE)
 }
 
 #' Create a data-only flights package
@@ -210,22 +210,27 @@ download_flightdata <- function(airport_codes,
 #'   create_flights("seaflights15", "SEA", 2015, origin = TRUE, dest = TRUE)
 #' }
 create_flights <- function(path, airport_codes, year,
-                           origin = TRUE, dest = FALSE,
+                           origin = TRUE,
+                           dest = FALSE,
                            all_weather = FALSE,
-                           author = getOption("devtools.desc.author")) {
-  assert_that(inherits(author, "person"))
-  description <- list(
-    Description = description_text(airport_codes, year, origin, dest),
-    Title = title_text(airport_codes, year, origin, dest),
-    License = "CC0",
-    Imports = "tibble",
-    Suggests = "dplyr",
-    "Authors@R" = author
-  )
-  create(path, description = description)
+                           force = TRUE,
+                           description = getOption("devtools.desc")) {
+  devtools:::check_package_name(path)
+  if (force || !dir.exists(path)) {
+    dir.create(path, showWarnings = FALSE)
+  } else {
+    stop("Directory ", path, " already exists.", call. = FALSE)
+  }
+  description$Description = description_text(airport_codes, year, origin, dest)
+  description$Title = title_text(airport_codes, year, origin, dest)
+  description$License = "CC0"
+  description$Imports = "tibble"
+  description$Suggests = "dplyr"
+  devtools::create(path, description = description, check = FALSE,
+                   rstudio = TRUE, quiet = FALSE)
   pkg <- as.package(path)
-  use_directory("data", ignore = FALSE, pkg = pkg)
-  use_data_raw(path)
+  dir.create(file.path(path, "data"), showWarnings = FALSE)
+  dir.create(file.path(path, "data-raw"), showWarnings = FALSE)
   download_flightdata(airport_codes, year,
                       data_dir = file.path(path, "data"),
                       raw_dir = file.path(path, "data-raw"),
@@ -237,5 +242,5 @@ create_flights <- function(path, airport_codes, year,
   render_airport(path)
   render_airlines(path)
   document(pkg)
-  pkg
+  invisible(TRUE)
 }
