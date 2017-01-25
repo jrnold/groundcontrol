@@ -10,7 +10,7 @@ download_flightdata(airport_codes, year, data_dir = "./data",
   all_weather = FALSE)
 
 create_flights(path, airport_codes, year, origin = TRUE, dest = FALSE,
-  all_weather = FALSE, author = getOption("devtools.desc.author"))
+  all_weather = FALSE, description = getOption("devtools.desc"))
 }
 \arguments{
 \item{airport_codes}{A character vector of airport codes}
@@ -27,7 +27,7 @@ create_flights(path, airport_codes, year, origin = TRUE, dest = FALSE,
 
 \item{path}{Location to create new package. The last component of the path will be used as the package name.}
 
-\item{author}{A \code{\link[utils]{person}} object to use as the author of the new package.}
+\item{description}{A \code{list} of description values to override default values or add additional values.}
 }
 \value{
 A \code{"package"} object for the created package.

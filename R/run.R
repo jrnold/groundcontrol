@@ -194,7 +194,7 @@ download_flightdata <- function(airport_codes,
 #' The function \code{download_flightdata} downloads the data and saves \code{.csv} and \code{.rda} files to specified directories, but does not create an R package.
 #'
 #' @param path Location to create new package. The last component of the path will be used as the package name.
-#' @param author A \code{\link[utils]{person}} object to use as the author of the new package.
+#' @param description A \code{list} of description values to override default values or add additional values.
 #' @param airport_codes A character vector of airport codes
 #' @param year Year of flights to download.
 #' @param origin,dest If \code{origin} (\code{dest}) is \code{TRUE}, keep all flights originating from (arriving at) \code{airports}. At least one of \code{origin} or \code{dest} must be \code{TRUE}.
@@ -213,14 +213,7 @@ create_flights <- function(path, airport_codes, year,
                            origin = TRUE,
                            dest = FALSE,
                            all_weather = FALSE,
-                           force = TRUE,
                            description = getOption("devtools.desc")) {
-  devtools:::check_package_name(path)
-  if (force || !dir.exists(path)) {
-    dir.create(path, showWarnings = FALSE)
-  } else {
-    stop("Directory ", path, " already exists.", call. = FALSE)
-  }
   description$Description = description_text(airport_codes, year, origin, dest)
   description$Title = title_text(airport_codes, year, origin, dest)
   description$License = "CC0"
