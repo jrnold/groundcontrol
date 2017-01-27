@@ -52,7 +52,8 @@ description_text <- function(airports, year, origin, dest) {
               sep = " or "),
         " ", airport_str(airports, "or"),
         " in ", year, ". ",
-        "Also includes useful 'metadata' on airlines, airports, weather, and planes.",
+        "Also includes useful 'metadata' on airlines, airports, ",
+        "weather, and planes.",
         " This is a data package created by groundcontrol.")
 }
 
@@ -214,11 +215,11 @@ create_flights <- function(path, airport_codes, year,
                            dest = FALSE,
                            all_weather = FALSE,
                            description = getOption("devtools.desc")) {
-  description$Description = description_text(airport_codes, year, origin, dest)
-  description$Title = title_text(airport_codes, year, origin, dest)
-  description$License = "CC0"
-  description$Imports = "tibble"
-  description$Suggests = "dplyr"
+  description$Description <- description_text(airport_codes, year, origin, dest)
+  description$Title <- title_text(airport_codes, year, origin, dest)
+  description$License <- "CC0"
+  description$Imports <- "tibble"
+  description$Suggests <- "dplyr"
   devtools::create(path, description = description, check = FALSE,
                    rstudio = TRUE, quiet = FALSE)
   pkg <- as.package(path)

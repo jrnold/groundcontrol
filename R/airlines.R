@@ -3,7 +3,9 @@ download_airlines <- function(data_dir, raw_dir, flights) {
     Code = col_character(),
     Description = col_character()
   )
-  raw <- read_csv("http://www.transtats.bts.gov/Download_Lookup.asp?Lookup=L_UNIQUE_CARRIERS", col_types = col_types)
+  url <- paste0("http://www.transtats.bts.gov/Download_Lookup.asp?",
+                "Lookup=L_UNIQUE_CARRIERS")
+  raw <- read_csv(url, col_types = col_types)
   airlines <- raw %>%
     rename_(carrier = ~Code, name = ~Description) %>%
     semi_join(flights, by = "carrier") %>%

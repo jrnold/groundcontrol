@@ -120,8 +120,9 @@ download_planes <- function(data_dir, raw_dir, flights) {
   all$no.eng[all$no.eng == 0] <- NA
   all$no.seats[all$no.seats == 0] <- NA
 
-  engine <- c("None", "Reciprocating", "Turbo-prop", "Turbo-shaft", "Turbo-jet",
-              "Turbo-fan", "Ramjet", "2 Cycle", "4 Cycle", "Unknown", "Electric", "Rotary")
+  engine <- c("None", "Reciprocating", "Turbo-prop", "Turbo-shaft",
+              "Turbo-jet", "Turbo-fan", "Ramjet", "2 Cycle", "4 Cycle",
+              "Unknown", "Electric", "Rotary")
   all$engine <- engine[all$type.eng + 1]
   all$type.eng <- NULL
 

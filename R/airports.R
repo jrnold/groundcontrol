@@ -1,6 +1,8 @@
 download_airports <- function(data_dir, raw_dir) {
   cache_dir <- raw_dir
-  airports_url <- "https://raw.githubusercontent.com/jpatokal/openflights/master/data/airports.dat"
+  airports_url <-
+    paste0("https://raw.githubusercontent.com/jpatokal/",
+           "openflights/master/data/airports.dat")
   dst <- file.path(cache_dir, "airports.dat")
   if (!file.exists(dst)) {
     download.file(airports_url, dst)
